@@ -1,0 +1,29 @@
+body { 
+    display: flex; 
+    flex-direction: column;
+    justify-content: center; 
+    align-items: center; 
+    height: 100vh; 
+    background-color: black; 
+    margin: 0;
+} 
+
+canvas { 
+    border: 2px solid #fff; 
+}
+
+#restartBtn {
+    display: none;
+    margin-top: 20px;
+    padding: 10px 20px;
+    font-size: 20px;
+    background-color: red;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+#restartBtn:hover {
+    background-color: darkred;
+}
