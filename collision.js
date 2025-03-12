@@ -19,7 +19,7 @@ class Circle {
         this.text = text;
         this.speed = speed;
         this.dx = (Math.random() > 0.5 ? 1 : -1) * this.speed;
-        this.dy = -this.speed;
+        this.dy = -this.speed; // Mueve hacia arriba
         this.flashDuration = 0;
     }
 
@@ -86,16 +86,35 @@ class Circle {
 // Arreglo para almacenar los círculos
 let circles = [];
 
-// Función para generar círculos
+// Función para comprobar si dos círculos se solapan
+function isOverlapping(x, y, radius, circles) {
+    for (let circle of circles) {
+        let distX = x - circle.posX;
+        let distY = y - circle.posY;
+        let distance = Math.sqrt(distX * distX + distY * distY);
+        if (distance < radius + circle.radius) {
+            return true; // Hay superposición
+        }
+    }
+    return false; // No hay superposición
+}
+
+// Función para generar círculos sin superposición en la parte inferior
 function generateCircles(n) {
     circles = [];
     for (let i = 0; i < n; i++) {
-        let radius = Math.random() * 30 + 20;
-        let x = Math.random() * (window_width - radius * 2) + radius;
-        let y = window_height - radius;
-        let color = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
-        let speed = Math.random() * 4 + 1;
-        let text = `C${i + 1}`;
+        let radius = Math.random() * 30 + 20; // Radio entre 20 y 50
+        let x, y;
+        let attempts = 0;
+        do {
+            x = Math.random() * (window_width - radius * 2) + radius;
+            y = Math.random() * (window_height * 0.3) + (window_height * 0.7); // Aparecen en el 70% inferior de la pantalla
+            attempts++;
+        } while (isOverlapping(x, y, radius, circles) && attempts < 100);
+
+        let color = `#${Math.floor(Math.random() * 16777215).toString(16)}`; // Color aleatorio
+        let speed = Math.random() * 4 + 1; // Velocidad entre 1 y 5
+        let text = `C${i + 1}`; // Etiqueta del círculo
         circles.push(new Circle(x, y, radius, color, text, speed));
     }
 }
