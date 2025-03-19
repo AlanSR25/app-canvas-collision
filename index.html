@@ -1,14 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>collision</title>
+    <title>Colisiones</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div id="menu">
+        <h1>Selecciona un nivel</h1>
+        <button onclick="startGame(1)">Fácil</button>
+        <button onclick="startGame(2)">Medio</button>
+        <button onclick="startGame(3)">Difícil</button>
+    </div>
+    
     <canvas id="canvas"></canvas>
-    <button id="restartBtn" onclick="restartGame()">Reiniciar</button>
+    <div id="hud">
+        <span id="score">Eliminados: 0</span>
+        <span id="time">Tiempo: 60s</span>
+    </div>
+    <button id="restartBtn" onclick="showMenu()">Reiniciar</button>
+    
     <script src="collision.js"></script>
 </body>
 </html>

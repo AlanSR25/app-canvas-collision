@@ -1,164 +1,178 @@
 const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const menu = document.getElementById("menu");
+const hud = document.getElementById("hud");
 const restartBtn = document.getElementById("restartBtn");
-let ctx = canvas.getContext("2d");
+const scoreText = document.getElementById("score");
+const timeText = document.getElementById("time");
 
-// Ajustar tamaño del canvas
-const window_height = window.innerHeight;
-const window_width = window.innerWidth;
-canvas.height = window_height;
-canvas.width = window_width;
-canvas.style.background = "black"; // Fondo negro
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+canvas.style.background = "black";
+
+let circles = [];
+let score = 0;
+let time = 60;
+let gameInterval;
+let timeInterval;
+let level = 1;
 
 class Circle {
-    constructor(x, y, radius, color, text, speed) {
-        this.posX = x;
-        this.posY = y;
+    constructor(x, y, radius, color, speed) {
+        this.x = x;
+        this.y = y;
         this.radius = radius;
         this.color = color;
         this.originalColor = color;
-        this.text = text;
         this.speed = speed;
-        this.dx = (Math.random() > 0.5 ? 1 : -1) * this.speed;
-        this.dy = -this.speed; // Mueve hacia arriba
+        this.dy = speed;
         this.flashDuration = 0;
     }
 
-    draw(context) {
-        context.beginPath();
-        context.strokeStyle = this.color;
-        context.textAlign = "center";
-        context.textBaseline = "middle";
-        context.font = "20px Arial";
-        context.fillText(this.text, this.posX, this.posY);
-        context.lineWidth = 2;
-        context.arc(this.posX, this.posY, this.radius, 0, Math.PI * 2, false);
-        context.stroke();
-        context.closePath();
+    draw() {
+        ctx.beginPath();
+        ctx.fillStyle = this.color;
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.closePath();
     }
 
-    update(context, circles) {
-        this.draw(context);
-        this.posX += this.dx;
-        if (this.posX + this.radius > window_width || this.posX - this.radius < 0) {
-            this.dx = -this.dx;
+    update() {
+        this.y += this.dy;
+
+        if (this.y - this.radius > canvas.height) {
+            this.y = -this.radius; 
         }
 
-        this.posY += this.dy;
-        if (this.posY - this.radius < 0 || this.posY + this.radius > window_height) {
-            this.dy = -this.dy;
-        }
-
-        this.checkCollisions(circles);
-
+        this.checkCollisions();
         if (this.flashDuration > 0) {
             this.flashDuration--;
         } else {
             this.color = this.originalColor;
         }
+
+        this.draw();
     }
 
-    checkCollisions(circles) {
-        for (let i = 0; i < circles.length; i++) {
-            let other = circles[i];
+    checkCollisions() {
+        for (let other of circles) {
             if (other !== this) {
-                let distX = this.posX - other.posX;
-                let distY = this.posY - other.posY;
-                let distance = Math.sqrt(distX * distX + distY * distY);
+                let distX = this.x - other.x;
+                let distY = this.y - other.y;
+                let distance = Math.sqrt(distX ** 2 + distY ** 2);
 
                 if (distance < this.radius + other.radius) {
                     this.color = "#0000FF";
                     other.color = "#0000FF";
                     this.flashDuration = 10;
                     other.flashDuration = 10;
-
-                    let tempDx = this.dx;
-                    let tempDy = this.dy;
-                    this.dx = other.dx;
-                    this.dy = other.dy;
-                    other.dx = tempDx;
-                    other.dy = tempDy;
                 }
             }
         }
     }
 }
 
-// Arreglo para almacenar los círculos
-let circles = [];
-
-// Función para comprobar si dos círculos se solapan
-function isOverlapping(x, y, radius, circles) {
-    for (let circle of circles) {
-        let distX = x - circle.posX;
-        let distY = y - circle.posY;
-        let distance = Math.sqrt(distX * distX + distY * distY);
-        if (distance < radius + circle.radius) {
-            return true; // Hay superposición
-        }
-    }
-    return false; // No hay superposición
-}
-
-// Función para generar círculos sin superposición en la parte inferior
+// Generar círculos sin solapamiento
 function generateCircles(n) {
     circles = [];
     for (let i = 0; i < n; i++) {
-        let radius = Math.random() * 30 + 20; // Radio entre 20 y 50
+        let radius = Math.random() * 30 + 20;
         let x, y;
         let attempts = 0;
         do {
-            x = Math.random() * (window_width - radius * 2) + radius;
-            y = Math.random() * (window_height * 0.3) + (window_height * 0.7); // Aparecen en el 70% inferior de la pantalla
+            x = Math.random() * (canvas.width - radius * 2) + radius;
+            y = Math.random() * -canvas.height; 
             attempts++;
-        } while (isOverlapping(x, y, radius, circles) && attempts < 100);
+        } while (isOverlapping(x, y, radius) && attempts < 100);
 
-        let color = `#${Math.floor(Math.random() * 16777215).toString(16)}`; // Color aleatorio
-        let speed = Math.random() * 4 + 1; // Velocidad entre 1 y 5
-        let text = `C${i + 1}`; // Etiqueta del círculo
-        circles.push(new Circle(x, y, radius, color, text, speed));
+        let color = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+        let speed = Math.random() * (level + 2) + 1;
+        circles.push(new Circle(x, y, radius, color, speed));
     }
 }
 
-// Función para mostrar contador y mensaje de victoria
-function drawCounter() {
-    ctx.fillStyle = "white"; // Texto en blanco
-    ctx.font = "30px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText(`Restantes: ${circles.length}`, window_width / 2, 50);
-
-    if (circles.length === 0) {
-        ctx.fillStyle = "red";
-        ctx.font = "50px Arial";
-        ctx.fillText("¡Ganaste!", window_width / 2, window_height / 2);
-        restartBtn.style.display = "block"; // Mostrar botón de reinicio
-    }
-}
-
-// Animación del juego
-function animate() {
-    ctx.clearRect(0, 0, window_width, window_height);
-    drawCounter();
-    circles.forEach(circle => {
-        circle.update(ctx, circles);
+// Verificar superposición
+function isOverlapping(x, y, radius) {
+    return circles.some(circle => {
+        let distX = x - circle.x;
+        let distY = y - circle.y;
+        let distance = Math.sqrt(distX ** 2 + distY ** 2);
+        return distance < radius + circle.radius;
     });
-    requestAnimationFrame(animate);
 }
 
-// Detectar clics para eliminar círculos
+// Detección de clic para eliminar círculos
 canvas.addEventListener("click", function(event) {
     const mouseX = event.clientX;
     const mouseY = event.clientY;
+    
     circles = circles.filter(circle => {
-        return Math.sqrt((mouseX - circle.posX) ** 2 + (mouseY - circle.posY) ** 2) > circle.radius;
+        let distance = Math.sqrt((mouseX - circle.x) ** 2 + (mouseY - circle.y) ** 2);
+        if (distance < circle.radius) {
+            score++;
+            scoreText.innerText = `Eliminados: ${score}`;
+            return false;
+        }
+        return true;
     });
 });
 
-// Función para reiniciar el juego
-function restartGame() {
-    generateCircles(25);
-    restartBtn.style.display = "none"; // Ocultar botón al reiniciar
+// Animación del juego
+function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    circles.forEach(circle => circle.update());
+    gameInterval = requestAnimationFrame(animate);
 }
 
-// Iniciar juego
-generateCircles(25);
-animate();
+// Iniciar juego con nivel seleccionado
+function startGame(selectedLevel) {
+    level = selectedLevel;
+    score = 0;
+    time = 60;
+
+    menu.style.display = "none";
+    canvas.style.display = "block";
+    hud.style.display = "flex";
+    restartBtn.style.display = "none";
+
+    scoreText.innerText = "Eliminados: 0";
+    timeText.innerText = `Tiempo: 60s`;
+
+    generateCircles(20 + level * 10);
+    animate();
+    startTimer();
+}
+
+// Iniciar temporizador
+function startTimer() {
+    clearInterval(timeInterval);
+    timeInterval = setInterval(() => {
+        time--;
+        timeText.innerText = `Tiempo: ${time}s`;
+
+        if (time <= 0) {
+            endGame();
+        }
+    }, 1000);
+}
+
+// Terminar juego
+function endGame() {
+    cancelAnimationFrame(gameInterval);
+    clearInterval(timeInterval);
+    ctx.fillStyle = "red";
+    ctx.font = "50px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("¡Tiempo terminado!", canvas.width / 2, canvas.height / 2);
+    restartBtn.style.display = "block";
+}
+
+// Volver al menú
+function showMenu() {
+    cancelAnimationFrame(gameInterval);
+    clearInterval(timeInterval);
+    menu.style.display = "flex";
+    canvas.style.display = "none";
+    hud.style.display = "none";
+    restartBtn.style.display = "none";
+}
